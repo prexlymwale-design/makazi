@@ -126,7 +126,7 @@ Run a monthly billing batch from an external scheduler with `npm run billing:gen
 
 ### GitHub and Netlify deployment
 
-The repository is configured for GitHub Actions and Netlify. GitHub Actions runs `npm test` for pull requests and pushes to `main`; Netlify serves `public/` and routes `/api/v1/*` to a serverless function. Production mode refuses to start on SQLite, whose files are not durable across serverless invocations.
+The repository is configured for Netlify. Netlify serves `public/` and routes `/api/v1/*` to a serverless function. Production mode refuses to start on SQLite, whose files are not durable across serverless invocations. Automated CI is not enabled yet.
 
 1. Push this project to the `main` branch of `https://github.com/prexlymwale-design/makazi`. The `.gitignore` excludes local environment files, SQLite databases, dependencies, and Netlify's local state.
 2. In Netlify, import the GitHub repository as a new site and select `main` as the production branch. The checked-in `netlify.toml` supplies the publish folder, function routing, and security headers.
