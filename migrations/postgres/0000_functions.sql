@@ -1,0 +1,7 @@
+CREATE OR REPLACE FUNCTION makazi_now()
+RETURNS TEXT
+LANGUAGE SQL
+VOLATILE
+AS $$
+  SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+$$;
