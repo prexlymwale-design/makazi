@@ -1,0 +1,330 @@
+openapi: 3.1.0
+info:
+  title: Makazi API
+  version: 0.1.0
+  description: Kenya-first rental management API. Money is represented in KES at the request boundary and integer cents in database responses.
+servers:
+  - url: http://127.0.0.1:4173/api/v1
+security:
+  - sessionCookie: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Service health check
+      responses:
+        '200': { description: Service is available }
+  /auth/register:
+    post:
+      security: []
+      summary: Create an owner and workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, organizationName, email, password]
+              properties:
+                fullName: { type: string, maxLength: 120 }
+                organizationName: { type: string, maxLength: 120 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+      responses:
+        '201': { description: Workspace created and session cookie set }
+        '409': { description: Email is already registered }
+  /auth/login:
+    post:
+      security: []
+      summary: Sign in
+      responses:
+        '200': { description: Session cookie set }
+        '401': { description: Credentials not recognized }
+  /auth/accept-invitation:
+    post:
+      security: []
+      summary: Set a password and accept a tenant invitation
+      responses:
+        '201': { description: Tenant portal account created and session cookie set }
+        '400': { description: Invitation token is invalid or expired }
+  /auth/accept-staff-invitation:
+    post:
+      security: []
+      summary: Set up an invited manager, accountant, or caretaker account
+      responses:
+        '201': { description: Staff account created and session cookie set }
+        '400': { description: Invitation token is invalid or expired }
+  /auth/logout:
+    post:
+      summary: End the current session
+      responses:
+        '200': { description: Session ended }
+  /session:
+    get:
+      summary: Current user, workspace, and role
+      responses:
+        '200': { description: Session details }
+  /dashboard:
+    get:
+      summary: Stored workspace metrics and recent activity
+      responses:
+        '200': { description: Dashboard data }
+  /properties:
+    get:
+      summary: Search and list properties
+      parameters:
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, maximum: 100 } }
+        - { in: query, name: offset, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200': { description: Workspace properties }
+    post:
+      summary: Create a property
+      responses:
+        '201': { description: Created property ID }
+  /properties/{id}:
+    patch:
+      summary: Archive a property
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Property archived }
+  /units:
+    get:
+      summary: Search and list units
+      responses:
+        '200': { description: Workspace units }
+    post:
+      summary: Create a unit and enforce the plan unit limit
+      responses:
+        '201': { description: Created unit ID }
+  /tenants:
+    get:
+      summary: Search and list tenant contact records
+      responses:
+        '200': { description: Workspace tenants }
+    post:
+      summary: Create a tenant contact record
+      responses:
+        '201': { description: Created tenant ID }
+  /tenant-invitations:
+    post:
+      summary: Create a one-time tenant portal link; the link is returned to the workspace manager
+      responses:
+        '201': { description: Invitation link and expiry }
+        '409': { description: Tenant email is missing or already linked }
+  /tenant/portal:
+    get:
+      summary: Read the authenticated tenant's own tenancy overview
+      responses:
+        '200': { description: Own lease, balance, recent invoices, receipts, and requests }
+  /tenant/invoices:
+    get:
+      summary: List only the authenticated tenant's invoices
+      responses:
+        '200': { description: Tenant invoices }
+  /tenant/payments:
+    get:
+      summary: List only the authenticated tenant's confirmed receipts
+      responses:
+        '200': { description: Tenant payments }
+  /tenant/maintenance:
+    get:
+      summary: List only the authenticated tenant's requests
+      responses:
+        '200': { description: Tenant requests }
+    post:
+      summary: Create a request for the authenticated tenant's active unit
+      responses:
+        '201': { description: Maintenance request created }
+  /tenant/profile:
+    patch:
+      summary: Update the authenticated tenant's phone number and email address
+      responses:
+        '200': { description: Contact details saved }
+  /staff:
+    get:
+      summary: List workspace members and pending invitations (owner only)
+      responses:
+        '200': { description: Staff and plan allowance }
+  /staff-invitations:
+    post:
+      summary: Invite a teammate and optionally assign properties to a caretaker (owner only)
+      responses:
+        '201': { description: One-time staff invitation link and expiry }
+        '409': { description: Staff plan allowance reached or email already in use }
+  /caretaker/overview:
+    get:
+      summary: Read assigned properties and open maintenance count
+      responses:
+        '200': { description: Caretaker workspace overview }
+  /caretaker/units:
+    get:
+      summary: List units at assigned properties only
+      responses:
+        '200': { description: Assigned units }
+  /caretaker/maintenance:
+    get:
+      summary: List maintenance requests at assigned properties only
+      responses:
+        '200': { description: Assigned maintenance tickets }
+    post:
+      summary: Create a maintenance request for an assigned unit
+      responses:
+        '201': { description: Maintenance ticket created }
+  /caretaker/maintenance/{id}:
+    patch:
+      summary: Update an assigned maintenance request status
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Maintenance status updated }
+  /leases:
+    get:
+      summary: List leases
+      responses:
+        '200': { description: Workspace leases }
+    post:
+      summary: Create a lease for a vacant unit
+      responses:
+        '201': { description: Created lease ID }
+        '409': { description: Unit already has an overlapping active lease }
+  /leases/{id}:
+    patch:
+      summary: Amend active lease rent, deposit requirement, or due day and record a revision
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Updated terms and changed fields }
+  /leases/{id}/end:
+    post:
+      summary: Close an active lease using its move-out date
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Lease ended and unit released }
+  /leases/{id}/history:
+    get:
+      summary: Read lease term revisions
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Immutable lease revisions }
+  /leases/{id}/deposits:
+    get:
+      summary: Read the deposit requirement and separate receipt/refund ledger
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Deposit balance and transactions }
+    post:
+      summary: Record a confirmed deposit receipt or refund using an idempotency key
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+        - { in: header, name: Idempotency-Key, required: true, schema: { type: string, minLength: 8 } }
+      responses:
+        '201': { description: Deposit transaction recorded }
+        '409': { description: Refund exceeds deposit balance }
+  /billing/generate:
+    post:
+      summary: Generate monthly rent invoices; safe to repeat for the same month
+      responses:
+        '200': { description: Number created and skipped }
+  /invoices:
+    get:
+      summary: List invoices with calculated paid and outstanding balances
+      responses:
+        '200': { description: Invoices }
+  /payments:
+    get:
+      summary: List confirmed payments and allocations
+      responses:
+        '200': { description: Payments }
+    post:
+      summary: Record a confirmed cash, bank, or other receipt
+      parameters:
+        - { in: header, name: Idempotency-Key, required: true, schema: { type: string, minLength: 8 } }
+      responses:
+        '201': { description: Receipt recorded and allocated }
+        '200': { description: Idempotent retry of an existing receipt }
+  /payments/mpesa/stk-push:
+    post:
+      summary: Request Daraja sandbox STK Push; never confirms a payment on its own
+      parameters:
+        - { in: header, name: Idempotency-Key, required: true, schema: { type: string, minLength: 8 } }
+      responses:
+        '202': { description: Request accepted and pending callback verification }
+        '503': { description: Sandbox configuration unavailable }
+  /payments/mpesa/callback:
+    post:
+      security: []
+      summary: Receive and server-verify a Daraja sandbox callback
+      responses:
+        '200': { description: Callback accepted for processing }
+  /payments/mpesa/transactions:
+    get:
+      summary: Review sandbox requests and reconciliation status
+      responses:
+        '200': { description: M-Pesa transactions }
+  /arrears:
+    get:
+      summary: List overdue invoice balances by aging bucket
+      responses:
+        '200': { description: Arrears and aging totals }
+  /expenses:
+    get:
+      summary: List property expenses
+      responses:
+        '200': { description: Expenses }
+    post:
+      summary: Create an expense and apply the configured approval threshold
+      responses:
+        '201': { description: Created expense and approval state }
+  /expenses/{id}/approval:
+    patch:
+      summary: Approve or reject an expense as an owner
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Approval decision recorded }
+  /maintenance:
+    get:
+      summary: List maintenance tickets
+      responses:
+        '200': { description: Maintenance tickets }
+    post:
+      summary: Create a maintenance request
+      responses:
+        '201': { description: Created maintenance ticket ID }
+  /maintenance/{id}:
+    patch:
+      summary: Update ticket status
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Status updated }
+  /settings:
+    get:
+      summary: Read workspace settings
+      responses:
+        '200': { description: Workspace settings }
+    patch:
+      summary: Update workspace name and expense approval threshold
+      responses:
+        '200': { description: Settings saved }
+  /audit:
+    get:
+      summary: Read workspace activity events
+      responses:
+        '200': { description: Audit events }
+  /exports:
+    post:
+      summary: Record a CSV data export event
+      responses:
+        '200': { description: Export audit event recorded }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sid

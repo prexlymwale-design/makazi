@@ -1,0 +1,24 @@
+{
+  "name": "makazi-rental-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kenya-first rental and property management workspace",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "test": "node --test",
+    "test:postgres": "node --env-file-if-exists=.env --test --test-concurrency=1 test/postgres-rls.integration.test.js test/postgres-import.integration.test.js test/server.postgres.integration.test.js",
+    "db:import:postgres": "node --env-file-if-exists=.env scripts/import-sqlite-to-postgres.js",
+    "billing:generate": "node --env-file-if-exists=.env src/billing-job.js"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}
